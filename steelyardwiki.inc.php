@@ -1,13 +1,18 @@
 <?php
+/*
+ * Created By: Jared Lobberecht
+ *
+ */
+
 class SteelyardWiki{
     public $repository;
     public $request;
     public $data;
 
     public function __construct(IRepository &$repository = NULL, IRequest &$request = NULL){
+        $this->repository = $repository;
+        $this->request = $request;
         if($repository != null && $request != null){
-            $this->repository = $repository;
-            $this->request = $request;
             $this->data = $this->processRequest($repository, $request);
         }
     }
@@ -61,7 +66,7 @@ class PageCriteria {
  * Repository classes
  */
 interface IRepository {
-    public function find(PageCriteria $criteria);
+    public function find(PageCriteria $criteria, $currentOnly = true);
     public function save(Page $page);
 }
 
@@ -77,8 +82,9 @@ class SqliteRepository implements IRepository {
         $this->connection = null;
     }
 
-    public function find(PageCriteria $criteria){
-        $sql = "SELECT * FROM CurrentPage WHERE CurrentPage.name LIKE '".$criteria->name[0]."';";
+    public function find(PageCriteria $criteria, $currentOnly = true){
+        $table = $currentOnly ? 'CurrentPage' : 'Page';
+        $sql = "SELECT * FROM {$table} WHERE {$table}.name LIKE '{$criteria->name[0]}';";
         $q = $this->connection->query($sql);
 
         $result = array();
