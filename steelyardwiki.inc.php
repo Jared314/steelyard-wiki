@@ -63,6 +63,7 @@ class PageCriteria {
 }
 
 class User {
+    private $id;
     public $name = '';
     public $password = '';
     public $active = true;
@@ -72,9 +73,11 @@ class User {
     }
 
     private function SetValues(array $values){
+        if(isset($values['id'])) $this->id = $values['id'];
         if(isset($values['name'])) $this->name = $values['name'];
         if(isset($values['inactive'])) $this->active = ($values['inactive'] == 0);
     }
+    public function getId(){ return $this->id; }
 }
 
 class UserCriteria{
@@ -120,7 +123,7 @@ class SqliteRepository implements IRepository {
 
     private function findUser(UserCriteria $criteria){
         //Todo: use all the criteria fields
-        $sql = "SELECT name, inactive FROM User WHERE name LIKE '{$criteria->name[0]}';";
+        $sql = "SELECT id, name, inactive FROM User WHERE name LIKE '{$criteria->name[0]}';";
         $q = $this->connection->query($sql);
 
         $result = array();
@@ -143,7 +146,13 @@ class SqliteRepository implements IRepository {
         $inactive = $user->active ? 0 : 1;
         $password = 'NULL';
         if($user->password != null) $password = "'".hash('sha256', $user->password)."'";
-        $sql = "INSERT OR REPLACE INTO User (name, password, inactive) VALUES ('{$page->name}', {$password}, {$inactive});";
+        $id = $user->getId();
+        if($id == null) $id = $this->getUserId($user->name);
+
+        $sql = '';
+        if($id == null) $sql = "INSERT INTO User (name, password, inactive) VALUES ('{$user->name}', {$password}, {$inactive});";
+        else $sql = "UPDATE User SET name = '{$user->name}', password = {$password}, inactive = {$inactive} WHERE id = {$id}";
+        
         return $this->connection->exec($sql) > 0;
     }
 
@@ -151,7 +160,7 @@ class SqliteRepository implements IRepository {
         if($password == null) $password = 'IS NULL';
         else $password = "= '".hash('sha256', $password)."'";
 
-        $sql = "SELECT COUNT(*) FROM User WHERE name LIKE '{$username}' AND password {$password};";
+        $sql = "SELECT COUNT(*) FROM User WHERE name LIKE '{$username}' AND password {$password} AND inactive = 0;";
         $q = $this->connection->query($sql);
         return $q->fetchColumn() > 0;
     }

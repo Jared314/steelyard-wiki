@@ -22,7 +22,6 @@ $user = $repository->find($criteria);
 if(count($user)) $user = $user[0];
 else $user = new User(array('name'=>$_REQUEST['name']));
 
-var_dump($_REQUEST);
 //Save if changed
 if($_REQUEST['SubmitAction'] == 'Commit' && $_REQUEST['username'] != null){
     $user->name = $_REQUEST['username'];
