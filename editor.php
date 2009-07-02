@@ -1,14 +1,31 @@
 <?php
+//Get Http Authorization Username and Password from mod_rewrite
+list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
+
 require_once('steelyardwiki.inc.php');
+$repository = new SqliteRepository('db.sqlite');
+
+//Validate User
+if (!isset($_SERVER['PHP_AUTH_USER']) 
+    || $_SERVER['PHP_AUTH_USER'] == ''
+    || !$repository->isValidUser($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])
+) {
+   header('WWW-Authenticate: Basic realm="Your Realm"');
+   header('HTTP/1.0 401 Unauthorized');
+   echo 'Text to send if Cancel button is used';
+   exit;
+} 
+ 
 
 $criteria = new PageCriteria();
 $criteria->name[] = $_REQUEST['name'];
 
 $wiki = new SteelyardWiki(
-    new SqliteRepository('db.sqlite'),
+    $repository,
     new CustomRequest($criteria)
 );
 
+//Save if changed
 if($_REQUEST['SubmitAction'] == 'Commit Version' && $_REQUEST['data'] != null){
     $wiki->data->value = $_REQUEST['data'];
     $success = $wiki->repository->save($wiki->data);

@@ -5,6 +5,10 @@ IndexIgnore */*
 RewriteEngine On
 
 #  Rules
+# Urls that do no match files or directories
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . index.php
+RewriteRule . index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+#  Everything else
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L]

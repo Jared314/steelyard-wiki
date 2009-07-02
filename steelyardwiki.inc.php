@@ -45,11 +45,11 @@ class Page {
     }
 
     private function SetValues(array $values){
-        if($values['name'] != null) $this->name = $values['name'];
-        if($values['value'] != null) $this->value = $values['value'];
-        if($values['created'] != null) $this->created = $values['created'];
-        if($values['username'] != null) $this->username = $values['username'];
-        if($values['inactive'] != null) $this->active = ($values['inactive'] == 0);
+        if(isset($values['name'])) $this->name = $values['name'];
+        if(isset($values['value'])) $this->value = $values['value'];
+        if(isset($values['created'])) $this->created = $values['created'];
+        if(isset($values['username'])) $this->username = $values['username'];
+        if(isset($values['inactive'])) $this->active = ($values['inactive'] == 0);
     }
 }
 
@@ -68,6 +68,7 @@ class PageCriteria {
 interface IRepository {
     public function find(PageCriteria $criteria, $currentOnly = true);
     public function save(Page $page);
+    public function isValidUser($username, $password);
 }
 
 class SqliteRepository implements IRepository {
@@ -97,6 +98,15 @@ class SqliteRepository implements IRepository {
         $sql = "INSERT INTO Page (name, value, user_id, inactive) VALUES ('{$page->name}','{$page->value}', 1, {$inactive})";
         $count = $this->connection->exec($sql);
         return ($count > 0);
+    }
+
+    public function isValidUser($username, $password){
+        if($password == null) $password = 'IS NULL';
+        else $password = "= '".hash('sha256', $password)."'";
+
+        $sql = "SELECT COUNT(*) FROM User WHERE name LIKE '{$username}' AND password {$password};";
+        $q = $this->connection->query($sql);
+        return $q->fetchColumn() > 0;
     }
 }
 
