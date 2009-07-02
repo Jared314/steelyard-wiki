@@ -62,12 +62,32 @@ class PageCriteria {
     public $active = true;
 }
 
+class User {
+    public $name = '';
+    public $password = '';
+    public $active = true;
+
+    function __construct(array $values = NULL) {
+        if($values != null) $this->SetValues($values);
+    }
+
+    private function SetValues(array $values){
+        if(isset($values['name'])) $this->name = $values['name'];
+        if(isset($values['inactive'])) $this->active = ($values['inactive'] == 0);
+    }
+}
+
+class UserCriteria{
+    public $name = array();
+    public $active = true;
+}
+
 /*
  * Repository classes
  */
 interface IRepository {
-    public function find(PageCriteria $criteria, $currentOnly = true);
-    public function save(Page $page);
+    public function find($criteria);
+    public function save($entity);
     public function isValidUser($username, $password);
 }
 
@@ -83,7 +103,12 @@ class SqliteRepository implements IRepository {
         $this->connection = null;
     }
 
-    public function find(PageCriteria $criteria, $currentOnly = true){
+    public function find($criteria, $currentOnly = true){
+        return ($criteria instanceof UserCriteria)? $this->findUser($criteria) : $this->findPage($criteria, $currentOnly);
+    }
+
+    private function findPage(PageCriteria $criteria, $currentOnly = true){
+        //Todo: use all the criteria fields
         $table = $currentOnly ? 'CurrentPage' : 'Page';
         $sql = "SELECT * FROM {$table} WHERE {$table}.name LIKE '{$criteria->name[0]}';";
         $q = $this->connection->query($sql);
@@ -93,11 +118,33 @@ class SqliteRepository implements IRepository {
         return $result;
     }
 
-    public function save(Page $page){
+    private function findUser(UserCriteria $criteria){
+        //Todo: use all the criteria fields
+        $sql = "SELECT name, inactive FROM User WHERE name LIKE '{$criteria->name[0]}';";
+        $q = $this->connection->query($sql);
+
+        $result = array();
+        foreach($q as $row){ $result[] = new User($row); }
+        return $result;
+    }
+
+    public function save($entity){
+        return ($entity instanceof User)? $this->saveUser($entity) : $this->savePage($entity);
+    }
+
+    private function savePage(Page $page){
+        $user_id = $this->getUserId($page->username);
         $inactive = $page->active ? 0 : 1;
-        $sql = "INSERT INTO Page (name, value, user_id, inactive) VALUES ('{$page->name}','{$page->value}', 1, {$inactive})";
-        $count = $this->connection->exec($sql);
-        return ($count > 0);
+        $sql = "INSERT INTO Page (name, value, user_id, inactive) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive});";
+        return $this->connection->exec($sql) > 0;
+    }
+
+    private function saveUser(User $user){
+        $inactive = $user->active ? 0 : 1;
+        $password = 'NULL';
+        if($user->password != null) $password = "'".hash('sha256', $user->password)."'";
+        $sql = "INSERT OR REPLACE INTO User (name, password, inactive) VALUES ('{$page->name}', {$password}, {$inactive});";
+        return $this->connection->exec($sql) > 0;
     }
 
     public function isValidUser($username, $password){
@@ -107,6 +154,13 @@ class SqliteRepository implements IRepository {
         $sql = "SELECT COUNT(*) FROM User WHERE name LIKE '{$username}' AND password {$password};";
         $q = $this->connection->query($sql);
         return $q->fetchColumn() > 0;
+    }
+
+    private function getUserId($username){
+        $sql = "SELECT id FROM User WHERE name LIKE '{$username}';";
+        $result = $this->connection->query($sql)->fetchColumn();
+        if($result == false) $result = null;
+        return $result;
     }
 }
 
