@@ -79,7 +79,7 @@ class PageCriteria {
     public $created = array();
     public $username = array();
     public $version = NULL;
-    public $active = true;
+    public $active = NULL;
 }
 
 class User {

@@ -16,21 +16,19 @@ if (!isset($_SERVER['PHP_AUTH_USER'])
    exit;
 } 
  
-
 $criteria = new PageCriteria();
 $criteria->name[] = $_REQUEST['name'];
+$data = $repository->find($criteria, false);
+if(count($data) > 0) $data = $data[0];
+else $data = new Page(array('name'=>$_REQUEST['name']));
 
-$wiki = new SteelyardWiki(
-    $repository,
-    new CustomRequest($criteria)
-);
 
 //Save if changed
 if($_REQUEST['SubmitAction'] == 'Commit Version' && $_REQUEST['data'] != null){
-    $wiki->data->name = $_REQUEST['name'];
-    $wiki->data->type = $_REQUEST['mimetype'];
-    $wiki->data->value = $_REQUEST['data'];
-    $success = $wiki->repository->save($wiki->data);
+    $data->type = $_REQUEST['mimetype'];
+    $data->value = $_REQUEST['data'];
+    $data->active = (array_key_exists('active', $_REQUEST) && $_REQUEST['active'] == 'on');
+    $success = $repository->save($data);
     if(!$success){
         //Todo: show error messages or exceptions
     }
@@ -45,11 +43,12 @@ if($_REQUEST['SubmitAction'] == 'Commit Version' && $_REQUEST['data'] != null){
 <body style="background-color:gray;">
 <form method="post">
 <table align="center" width="100%">
-<tr><td align="left"><label for="mimetype">Mime Type</label>: <input type="text" id="mimetype" name="mimetype" value="<?php echo($wiki->data->type); ?>"/></td></tr>
+<tr><td align="left"><label for="mimetype">Mime Type</label>: <input type="text" id="mimetype" name="mimetype" value="<?php echo($data->type); ?>"/></td></tr>
+<tr><td><label for="active">Active</label>: <input type="checkbox" id="active" name="active" <?php echo($data->active?'checked="checked"':''); ?> /></td></tr>
 <tr><td align="center">
 <textarea cols="65" id="data" name="data" rows="50" style="width:100%;">
 <?php
-echo(htmlentities($wiki->data->value));
+echo(htmlentities($data->value));
 ?>
 </textarea>
 </td></tr>
