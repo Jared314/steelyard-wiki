@@ -156,7 +156,6 @@ class SqliteRepository implements IRepository {
         return ($entity instanceof User)? $this->saveUser($entity) : $this->savePage($entity);
     }
     private function savePage(Page $page){
-        var_dump($page);
         $user_id = $this->getUserId($page->username);
         $inactive = $page->active ? 0 : 1;
         $sql = "INSERT INTO Page (name, value, user_id, inactive, type) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive}, '{$page->type}');";

@@ -27,6 +27,8 @@ $wiki = new SteelyardWiki(
 
 //Save if changed
 if($_REQUEST['SubmitAction'] == 'Commit Version' && $_REQUEST['data'] != null){
+    $wiki->data->name = $_REQUEST['name'];
+    $wiki->data->type = $_REQUEST['mimetype'];
     $wiki->data->value = $_REQUEST['data'];
     $success = $wiki->repository->save($wiki->data);
     if(!$success){
@@ -43,6 +45,7 @@ if($_REQUEST['SubmitAction'] == 'Commit Version' && $_REQUEST['data'] != null){
 <body style="background-color:gray;">
 <form method="post">
 <table align="center" width="100%">
+<tr><td align="left"><label for="mimetype">Mime Type</label>: <input type="text" id="mimetype" name="mimetype" value="<?php echo($wiki->data->type); ?>"/></td></tr>
 <tr><td align="center">
 <textarea cols="65" id="data" name="data" rows="50" style="width:100%;">
 <?php
