@@ -110,6 +110,7 @@ interface IRepository {
     public function find($criteria);
     public function save($entity);
     public function isValidUser($username, $password);
+    public function hasUsers();
     public function create();
     public function destroy();
     public function clear();
@@ -177,6 +178,11 @@ class SqliteRepository implements IRepository {
         else $password = "= '".hash('sha256', $password)."'";
 
         $sql = "SELECT COUNT(id) FROM User WHERE name LIKE '{$username}' AND password {$password} AND inactive = 0;";
+        $q = $this->connection->query($sql);
+        return $q != false && $q->fetchColumn() > 0;
+    }
+    public function hasUsers(){
+        $sql = 'SELECT COUNT(id) FROM User;';
         $q = $this->connection->query($sql);
         return $q != false && $q->fetchColumn() > 0;
     }

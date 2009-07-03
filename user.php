@@ -8,7 +8,7 @@ $repository = new SqliteRepository('db.sqlite');
 //Validate User
 if (!isset($_SERVER['PHP_AUTH_USER'])
     || $_SERVER['PHP_AUTH_USER'] == ''
-    || !$repository->isValidUser($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])
+    || ($repository->hasUsers() && !$repository->isValidUser($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']))
 ) {
    header('WWW-Authenticate: Basic realm="Your Realm"');
    header('HTTP/1.0 401 Unauthorized');
