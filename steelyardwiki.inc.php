@@ -57,6 +57,7 @@ class Page {
     public $username = "";
     public $version = 1;
     public $active = true;
+    public $type = 'text/html';
 
     function __construct(array $values = NULL) {
         if($values != null) $this->SetValues($values);
@@ -68,6 +69,7 @@ class Page {
         if(isset($values['created'])) $this->created = $values['created'];
         if(isset($values['username'])) $this->username = $values['username'];
         if(isset($values['inactive'])) $this->active = ($values['inactive'] == 0);
+        if(isset($values['type'])) $this->type = $values['type'];
     }
 }
 
@@ -154,9 +156,10 @@ class SqliteRepository implements IRepository {
         return ($entity instanceof User)? $this->saveUser($entity) : $this->savePage($entity);
     }
     private function savePage(Page $page){
+        var_dump($page);
         $user_id = $this->getUserId($page->username);
         $inactive = $page->active ? 0 : 1;
-        $sql = "INSERT INTO Page (name, value, user_id, inactive) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive});";
+        $sql = "INSERT INTO Page (name, value, user_id, inactive, type) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive}, '{$page->type}');";
         return $this->connection->exec($sql) > 0;
     }
     private function saveUser(User $user){
@@ -191,8 +194,8 @@ class SqliteRepository implements IRepository {
         $result = false;
         $user = 'CREATE TABLE IF NOT EXISTS "User" ("id" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , "name" VARCHAR NOT NULL , "password" VARCHAR, "inactive" INTEGER DEFAULT 0);';
         $userIndex = 'CREATE UNIQUE INDEX IF NOT EXISTS "Unique_User_name" ON "User" ("name" ASC);';
-        $page = 'CREATE TABLE IF NOT EXISTS "Page" ("id" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , "name" VARCHAR(512) NOT NULL , "value" TEXT, "user_id" INTEGER NOT NULL , "created" DATETIME DEFAULT CURRENT_TIMESTAMP, "inactive" INTEGER DEFAULT 0);';
-        $currentpage = 'CREATE VIEW IF NOT EXISTS "CurrentPage" AS SELECT Page.name as name, Page.value as value, Page.created as created, Page.inactive as inactive, User.name as username FROM Page LEFT JOIN User ON User.id = Page.user_id GROUP BY Page.name HAVING MAX(created) and Page.inactive = 0;';
+        $page = 'CREATE TABLE IF NOT EXISTS "Page" ("id" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , "name" VARCHAR(512) NOT NULL , "value" TEXT, "user_id" INTEGER NOT NULL , "created" DATETIME DEFAULT CURRENT_TIMESTAMP, "inactive" INTEGER DEFAULT 0, "type" VARCHAR(255));';
+        $currentpage = 'CREATE VIEW IF NOT EXISTS "CurrentPage" AS SELECT Page.name as name, Page.value as value, Page.created as created, Page.inactive as inactive, User.name as username, Page.type as type FROM Page LEFT JOIN User ON User.id = Page.user_id GROUP BY Page.name HAVING MAX(created) and Page.inactive = 0;';
 
         try {
             $this->connection->beginTransaction();
@@ -259,9 +262,9 @@ class SqliteRepository implements IRepository {
             $userColumns = $this->connection->query($user);
             $currentPageColumns = $this->connection->query($currentPage);
 
-            $valid = $this->containsColumnNames($pageColumns, array('name','value','inactive'))
+            $valid = $this->containsColumnNames($pageColumns, array('name', 'value', 'user_id', 'inactive', 'type'))
                      && $this->containsColumnNames($userColumns, array('name','password','inactive'))
-                     && $this->containsColumnNames($currentPageColumns, array('name','value','created','inactive'));
+                     && $this->containsColumnNames($currentPageColumns, array('name','value','created','inactive', 'type'));
         }
 
         return $valid;
@@ -280,7 +283,7 @@ class SqliteRepository implements IRepository {
     private function getUserId($username){
         $sql = "SELECT id FROM User WHERE name LIKE '{$username}';";
         $result = $this->connection->query($sql)->fetchColumn();
-        if($result == false) $result = null;
+        if($result == false) $result = 0;
         return $result;
     }
 }

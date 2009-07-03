@@ -6,5 +6,6 @@ $wiki = new SteelyardWiki(
     new HttpRequest()
 );
 
+header('Content-type: '.$wiki->data->type);
 echo($wiki->data->value);
 ?>
