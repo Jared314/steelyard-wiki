@@ -134,8 +134,8 @@ class SqliteRepository implements IRepository {
     }
     private function findPage(PageCriteria $criteria, $currentOnly = true){
         //Todo: use all the criteria fields
-        $table = $currentOnly ? 'CurrentPage' : 'Page';
-        $sql = "SELECT * FROM {$table} WHERE {$table}.name LIKE '{$criteria->name[0]}' ORDER BY {$table}.created DESC;";
+        $sql = "SELECT * FROM CurrentPage WHERE name LIKE '{$criteria->name[0]}' ORDER BY created DESC;";
+        if(!$currentOnly) $sql = "SELECT Page.name as name, Page.value as value, Page.created as created, Page.inactive as inactive, User.name as username, Page.type as type FROM Page LEFT JOIN User ON User.id = Page.user_id WHERE Page.name LIKE '{$criteria->name[0]}' ORDER BY Page.created DESC;";
         $q = $this->connection->query($sql);
 
         $result = array();
@@ -157,6 +157,7 @@ class SqliteRepository implements IRepository {
     }
     private function savePage(Page $page){
         $user_id = $this->getUserId($page->username);
+        var_dump($user_id);
         $inactive = $page->active ? 0 : 1;
         $sql = "INSERT INTO Page (name, value, user_id, inactive, type) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive}, '{$page->type}');";
         return $this->connection->exec($sql) > 0;
