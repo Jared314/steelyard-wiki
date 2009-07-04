@@ -135,7 +135,7 @@ class SqliteRepository implements IRepository {
     private function findPage(PageCriteria $criteria, $currentOnly = true){
         //Todo: use all the criteria fields
         $table = $currentOnly ? 'CurrentPage' : 'Page';
-        $sql = "SELECT * FROM {$table} WHERE {$table}.name LIKE '{$criteria->name[0]}';";
+        $sql = "SELECT * FROM {$table} WHERE {$table}.name LIKE '{$criteria->name[0]}' ORDER BY {$table}.created DESC;";
         $q = $this->connection->query($sql);
 
         $result = array();
