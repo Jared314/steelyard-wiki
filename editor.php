@@ -50,8 +50,8 @@ function setValues(item){
     document.getElementById('mimetype').value = item.type;
     document.getElementById('data').value = item.value;
     document.getElementById('active').checked = item.active;
-    document.getElementById('username').innerHTML = item.username;
     document.getElementById('createdDate').innerHTML = item.created;
+    document.getElementById('username').innerHTML = item.username;
 }
 
 function onBaseVersionChange(el){
@@ -77,8 +77,8 @@ function onLoad(){
         </select><?php } ?>
         <label for="mimetype">Mime Type</label>:&nbsp;<input type="text" id="mimetype" name="mimetype" value=""/>&nbsp;
         <label for="active">Active</label>:&nbsp;<input type="checkbox" id="active" name="active" />&nbsp;
-        <label for="">Created</label>:&nbsp;<span id="createdDate" />&nbsp;
-        <label for="">Username</label>:&nbsp;<span id="username" />
+        <label for="">Created</label>:&nbsp;<span id="createdDate"></span>&nbsp;
+        <label for="">Username</label>:&nbsp;<span id="username"></span>
     </td>
 </tr>
 <tr><td align="center" colspan="5">
@@ -87,7 +87,7 @@ function onLoad(){
 <tr><td align="left">
 <input type="submit" name="SubmitAction" value="Commit Version" />&nbsp;
 <input type="submit" name="SubmitAction" value="Cancel" />&nbsp;
-Username:&nbsp;<span id="currentUsername"/>
+Username:&nbsp;<span id="currentUsername"></span>
 </td></tr>
 </table>
 </form>
