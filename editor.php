@@ -51,6 +51,7 @@ function setValues(item){
     document.getElementById('data').value = item.value;
     document.getElementById('active').checked = item.active;
     document.getElementById('username').innerHTML = item.username;
+    document.getElementById('createdDate').innerHTML = item.created;
 }
 
 function onBaseVersionChange(el){
@@ -76,6 +77,7 @@ function onLoad(){
         </select><?php } ?>
         <label for="mimetype">Mime Type</label>:&nbsp;<input type="text" id="mimetype" name="mimetype" value=""/>&nbsp;
         <label for="active">Active</label>:&nbsp;<input type="checkbox" id="active" name="active" />&nbsp;
+        <label for="">Created</label>:&nbsp;<span id="createdDate" />&nbsp;
         <label for="">Username</label>:&nbsp;<span id="username" />
     </td>
 </tr>
