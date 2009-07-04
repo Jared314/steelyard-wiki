@@ -157,7 +157,6 @@ class SqliteRepository implements IRepository {
     }
     private function savePage(Page $page){
         $user_id = $this->getUserId($page->username);
-        var_dump($user_id);
         $inactive = $page->active ? 0 : 1;
         $sql = "INSERT INTO Page (name, value, user_id, inactive, type) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive}, '{$page->type}');";
         return $this->connection->exec($sql) > 0;
