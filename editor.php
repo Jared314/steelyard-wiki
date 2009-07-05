@@ -1,23 +1,29 @@
 <?php
-//Get Http Authorization Username and Password from mod_rewrite
+require_once('steelyardwiki.inc.php');
+
+function array_keys_exist(array $keys, array $search){
+    foreach($keys as $key) if(!array_key_exists($key, $search)) return false;
+    return true;
+}
+
+
+
 list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
 
-require_once('steelyardwiki.inc.php');
 $repository = new SqliteRepository('db.sqlite');
 
 //Validate User
-if (!isset($_SERVER['PHP_AUTH_USER']) 
-    || $_SERVER['PHP_AUTH_USER'] == ''
+if (!array_keys_exist(array('PHP_AUTH_USER', 'PHP_AUTH_PW'), $_SERVER)
     || !$repository->isValidUser($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])
 ) {
-   header('WWW-Authenticate: Basic realm="Your Realm"');
+   header('WWW-Authenticate: Basic realm="Editor"');
    header('HTTP/1.0 401 Unauthorized');
-   echo 'Text to send if Cancel button is used';
+   echo('HTTP/1.0 401 Unauthorized');
    exit;
 } 
 
 //Save if changed
-if($_REQUEST['SubmitAction'] == 'Commit Version' && isset($_REQUEST['name']) && isset($_REQUEST['data'])){
+if(!empty($_REQUEST['Commit']) && array_keys_exist(array('name', 'mimetype', 'data'), $_REQUEST)){
     $newData = new Page();
     $newData->name = $_REQUEST['name'];
     $newData->type = $_REQUEST['mimetype'];
@@ -44,37 +50,29 @@ if(count($data) < 1)
 <title>Editor</title>
 <script type="text/javascript">
 var data = <?php echo(json_encode($data)); ?>;
-var currentUsername = '<?php echo($_SERVER['PHP_AUTH_USER']); ?>';
+function $(id){ return document.getElementById(id); }
 
 function setValues(item){
-    document.getElementById('mimetype').value = item.type;
-    document.getElementById('data').value = item.value;
-    document.getElementById('active').checked = item.active;
-    document.getElementById('createdDate').innerHTML = item.created;
-    document.getElementById('username').innerHTML = item.username;
+    $('mimetype').value = item.type;
+    $('data').value = item.value;
+    $('active').checked = item.active;
+    $('createdDate').innerHTML = item.created;
+    $('username').innerHTML = item.username;
 }
 
 function onBaseVersionChange(el){
-    i = data.length - el[el.selectedIndex].value;
-    setValues(data[i]);
+    setValues(data[el.selectedIndex]);
 }
-
-function onLoad(){
-    setValues(data[0]);
-    document.getElementById('currentUsername').innerHTML = currentUsername;
-}
-
 </script>
 </head>
-<body style="background-color:gray;" onload="onLoad()">
+<body style="background-color:gray;" onload="setValues(data[0])">
 <form method="post">
 <table align="center" width="100%">
 <tr>
-    <td align="left">
-<?php if(count($data) > 1){ ?>      <label for="baseVersion">Version</label>:&nbsp;
-        <select id="baseVersion" onChange="onBaseVersionChange(this)">
-            <?php for($i = count($data); $i > 0; $i--) { ?><option value="<?php echo($i) ?>"><?php echo($i) ?></option><?php } ?>
-        </select><?php } ?>
+    <td>
+        <label for="baseVersion">Version</label>:&nbsp;<select id="baseVersion" onChange="onBaseVersionChange(this)">
+            <?php for($i = count($data); $i > 0; $i--) { ?><option><?=$i ?></option><?php } ?>
+        </select>
         <label for="mimetype">Mime Type</label>:&nbsp;<input type="text" id="mimetype" name="mimetype" value=""/>&nbsp;
         <label for="active">Active</label>:&nbsp;<input type="checkbox" id="active" name="active" />&nbsp;
         <label for="">Created</label>:&nbsp;<span id="createdDate"></span>&nbsp;
@@ -84,10 +82,10 @@ function onLoad(){
 <tr><td align="center" colspan="5">
 <textarea cols="65" id="data" name="data" rows="50" style="width:100%;"></textarea>
 </td></tr>
-<tr><td align="left">
-<input type="submit" name="SubmitAction" value="Commit Version" />&nbsp;
-<input type="submit" name="SubmitAction" value="Cancel" />&nbsp;
-Username:&nbsp;<span id="currentUsername"></span>
+<tr><td>
+<input type="submit" name="Commit" value="Commit Version" />&nbsp;
+<input type="submit" name="Cancel" value="Cancel" />&nbsp;
+Username:&nbsp;<span id="currentUsername"><?=$_SERVER['PHP_AUTH_USER'] ?></span>
 </td></tr>
 </table>
 </form>
