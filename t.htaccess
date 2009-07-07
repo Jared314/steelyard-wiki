@@ -5,6 +5,9 @@ IndexIgnore */*
 RewriteEngine On
 
 #  Rules
+RewriteRule db\.sqlite index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteRule binaryData index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
 # Urls that do no match files or directories
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
