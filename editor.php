@@ -24,15 +24,28 @@ if (!array_keys_exist(array('PHP_AUTH_USER', 'PHP_AUTH_PW'), $_SERVER)
 
 //Save if changed
 if(!empty($_REQUEST['Commit']) && array_keys_exist(array('name', 'mimetype', 'data'), $_REQUEST)){
+
+
     $newData = new Page();
     $newData->name = $_REQUEST['name'];
-    $newData->type = $_REQUEST['mimetype'];
-    $newData->value = $_REQUEST['data'];
+    $newData->type = !empty($_FILES['filedata']['type']) ? $_FILES['filedata']['type'] : $_REQUEST['mimetype'];
+    $newData->value = $_REQUEST['data']; 
     $newData->active = (array_key_exists('active', $_REQUEST) && $_REQUEST['active'] == 'on');
     $newData->username = $_SERVER['PHP_AUTH_USER'];
+    $newData->isBinary = !empty($_FILES['filedata']);
+
+
 
     $success = $repository->save($newData);
+    if($success){
+        if(!empty($_FILES['filedata']) && !empty($_FILES['filedata']['tmp_name'])){
+            $binaryRepository = new FileBinaryDataRepository();
+            $success = $binaryRepository->save($_REQUEST['name'], $_FILES['filedata']['tmp_name']);
+        }
+    }
+
     if(!$success){
+        echo('Failure');
         //Todo: show error messages or exceptions
     }
 }
@@ -54,7 +67,7 @@ function $(id){ return document.getElementById(id); }
 
 function setValues(item){
     $('mimetype').value = item.type;
-    $('data').value = item.value;
+    $('data').value = (item.binaryname != null) ? '[Binary Data]' : item.value;
     $('active').checked = item.active;
     $('createdDate').innerHTML = item.created;
     $('username').innerHTML = item.username;
@@ -66,7 +79,7 @@ function onBaseVersionChange(el){
 </script>
 </head>
 <body style="background-color:gray;" onload="setValues(data[0])">
-<form method="post">
+<form method="post" enctype="multipart/form-data">
 <table align="center" width="100%">
 <tr>
     <td>
@@ -81,6 +94,7 @@ function onBaseVersionChange(el){
 </tr>
 <tr><td align="center" colspan="5">
 <textarea cols="65" id="data" name="data" rows="50" style="width:100%;"></textarea>
+<input type="file" id="filedata" name="filedata" />
 </td></tr>
 <tr><td>
 <input type="submit" name="Commit" value="Commit Version" />&nbsp;

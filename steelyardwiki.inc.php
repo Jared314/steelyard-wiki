@@ -6,15 +6,17 @@
 
 class SteelyardWiki{
     public $repository;
+    public $binaryRepository;
     public $request;
     public $data;
 
-    public function __construct(IRepository &$repository = NULL, IRequest &$request = NULL){
+    public function __construct(IRepository &$repository = NULL, IRequest &$request = NULL, IBinaryDataRepository &$binaryRepository = NULL){
         $this->repository = $repository;
         $this->request = $request;
-        if($repository != null && $request != null){
+        $this->binaryRepository = $binaryRepository;
+        if($repository != null && $request != null && $binaryRepository != null){
             if($repository->isValidRepository() || $repository->create()){
-                $this->data = $this->processRequest($repository, $request);
+                $this->data = $this->processRequest($repository, $request, $binaryRepository);
             }
         }
     }
@@ -24,7 +26,7 @@ class SteelyardWiki{
         $this->repository = null;
     }
 
-    public function processRequest(IRepository &$repository, IRequest &$request){
+    public function processRequest(IRepository &$repository, IRequest &$request, IBinaryDataRepository &$binaryRepository){
         $criteria = $request->getCriteria();
         $result = $repository->find($criteria);
         return ($result != null && count($result) > 0) ? $result[0] : new Page();
@@ -45,6 +47,13 @@ class SteelyardWiki{
     public function isValid(){
         return ($this->repository != null) ? $this->repository->isValidRepository() : false;
     }
+
+    public function getBinaryData(IBinaryDataRepository &$binaryRepository = null, Page $page = null){
+        if($binaryRepository == null) $binaryRepository = $this->binaryRepository;
+        if($page == null) $page = $this->data;
+        if(!$page->isBinary) return null;
+        return $binaryRepository->find($page->name);
+    }
 }
 
 /*
@@ -58,6 +67,7 @@ class Page {
     public $version = 1;
     public $active = true;
     public $type = 'text/html';
+    public $isBinary = false;
 
     function __construct(array $values = NULL) {
         if($values != null) $this->SetValues($values);
@@ -70,6 +80,7 @@ class Page {
         if(isset($values['username'])) $this->username = $values['username'];
         if(isset($values['inactive'])) $this->active = ($values['inactive'] == 0);
         if(isset($values['type'])) $this->type = $values['type'];
+        if(isset($values['is_binary'])) $this->isBinary = ($values['is_binary'] == 1);
     }
 }
 
@@ -158,7 +169,8 @@ class SqliteRepository implements IRepository {
     private function savePage(Page $page){
         $user_id = $this->getUserId($page->username);
         $inactive = $page->active ? 0 : 1;
-        $sql = "INSERT INTO Page (name, value, user_id, inactive, type) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive}, '{$page->type}');";
+        $is_binary = $page->isBinary ? 1 : 0;
+        $sql = "INSERT INTO Page (name, value, user_id, inactive, type, is_binary) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive}, '{$page->type}', {$is_binary});";
         return $this->connection->exec($sql) > 0;
     }
     private function saveUser(User $user){
@@ -191,10 +203,10 @@ class SqliteRepository implements IRepository {
 
     public function create(){
         $result = false;
-        $user = 'CREATE TABLE IF NOT EXISTS "User" ("id" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , "name" VARCHAR NOT NULL , "password" VARCHAR, "inactive" INTEGER DEFAULT 0);';
+        $user = 'CREATE TABLE IF NOT EXISTS "User" ("id" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , "name" VARCHAR NOT NULL , "password" VARCHAR(512), "inactive" INTEGER DEFAULT 0);';
         $userIndex = 'CREATE UNIQUE INDEX IF NOT EXISTS "Unique_User_name" ON "User" ("name" ASC);';
-        $page = 'CREATE TABLE IF NOT EXISTS "Page" ("id" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , "name" VARCHAR(512) NOT NULL , "value" TEXT, "user_id" INTEGER NOT NULL , "created" DATETIME DEFAULT CURRENT_TIMESTAMP, "inactive" INTEGER DEFAULT 0, "type" VARCHAR(255));';
-        $currentpage = 'CREATE VIEW IF NOT EXISTS "CurrentPage" AS SELECT Page.name as name, Page.value as value, Page.created as created, Page.inactive as inactive, User.name as username, Page.type as type FROM Page LEFT JOIN User ON User.id = Page.user_id GROUP BY Page.name HAVING MAX(created) and Page.inactive = 0;';
+        $page = 'CREATE TABLE IF NOT EXISTS "Page" ("id" INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , "name" VARCHAR(512) NOT NULL , "value" BLOB, "user_id" INTEGER NOT NULL , "created" DATETIME DEFAULT CURRENT_TIMESTAMP, "inactive" INTEGER DEFAULT 0, "type" VARCHAR(255), "is_binary" INTEGER DEFAULT 0);';
+        $currentpage = 'CREATE VIEW IF NOT EXISTS "CurrentPage" AS SELECT Page.name as name, Page.value as value, Page.created as created, Page.inactive as inactive, User.name as username, Page.type as type, Page.is_binary as is_binary FROM Page LEFT JOIN User ON User.id = Page.user_id GROUP BY Page.name HAVING MAX(created) and Page.inactive = 0;';
 
         try {
             $this->connection->beginTransaction();
@@ -261,7 +273,7 @@ class SqliteRepository implements IRepository {
             $userColumns = $this->connection->query($user);
             $currentPageColumns = $this->connection->query($currentPage);
 
-            $valid = $this->containsColumnNames($pageColumns, array('name', 'value', 'user_id', 'inactive', 'type'))
+            $valid = $this->containsColumnNames($pageColumns, array('name', 'value', 'user_id', 'inactive', 'type', 'is_binary'))
                      && $this->containsColumnNames($userColumns, array('name','password','inactive'))
                      && $this->containsColumnNames($currentPageColumns, array('name','value','created','inactive', 'type'));
         }
@@ -330,6 +342,71 @@ class HttpRequest implements IRequest{
 
     private function parseUrl($baseUrl, $url){
         return trim(str_replace($baseUrl, '', $url), '/');
+    }
+}
+
+/*
+ * Binary data classes
+ */
+interface IBinaryDataRepository{
+    public function find($name);
+    public function save($name, $value);
+}
+
+class FileBinaryDataRepository implements IBinaryDataRepository{
+    private $basePath = './binaryData/';
+
+    function __construct($basePath = NULL){
+        if(!empty($basePath)){
+            $this->basePath = rtrim(dirname($basePath), "/\\").'/';
+        }
+    }
+
+    public function find($name){
+        $name = $this->findFile($this->basePath, $name);
+        if(!empty($name) && is_file($this->basePath.$name)){
+            return $this->getBinaryContents($this->basePath.$name);
+        }
+        return null;
+    }
+
+    public function save($name, $value){
+        date_default_timezone_set('UTC');
+        $name = $this->basePath.$name.date('YmdHis');
+        $result = false;
+        if(is_string($value) && is_file($value)){
+            $result = move_uploaded_file($value, $name);
+        }else{
+            $result = $this->setBinaryContents($name, $value);
+        }
+        return $result;
+    }
+
+    private function findFile($base, $name){
+        if (is_dir($base)) {
+            $contents = scandir($base, 1);
+            $filteredContents = array();
+            foreach($contents as $item)
+                if(eregi('^'.$name.'', $item))
+                    $filteredContents[] = $item;
+            
+            if(count($filteredContents) > 0) return $filteredContents[0];
+        }
+        
+        return null;
+    }
+
+    private function getBinaryContents($filename){
+        $handle = fopen(realpath($filename), "rb");
+        $contents = fread($handle, filesize(realpath($filename)));
+        fclose($handle);
+        return $contents;
+    }
+    private function setBinaryContents($filename, $value){
+        $handle = fopen($filename, "wb");
+        $bytesWritten = fwrite($handle, $value);
+        fclose($handle);
+        return $bytesWritten != false && $bytesWritten > 0;
     }
 }
 ?>

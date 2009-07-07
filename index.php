@@ -3,9 +3,14 @@ require_once('steelyardwiki.inc.php');
 
 $wiki = new SteelyardWiki(
     new SqliteRepository('db.sqlite'),
-    new HttpRequest()
+    new HttpRequest(),
+    new FileBinaryDataRepository()
 );
 
 header('Content-type: '.$wiki->data->type);
-echo($wiki->data->value);
+
+if($wiki->data->isBinary)
+    echo $wiki->getBinaryData();
+else
+    echo($wiki->data->value);
 ?>
