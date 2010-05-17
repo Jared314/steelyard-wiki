@@ -19,7 +19,11 @@ class MySqlRepository implements IRepository {
         $sql = "SELECT * FROM {$this->table_prefix}CurrentPage WHERE name LIKE '{$criteria->name[0]}' ORDER BY created DESC;";
         if(!$currentOnly) $sql = "SELECT Page.name as name, Page.value as value, Page.created as created, Page.inactive as inactive, User.name as username, Page.type as type FROM {$this->table_prefix}Page as Page LEFT JOIN {$this->table_prefix}User as User ON User.id = Page.user_id WHERE Page.name LIKE '{$criteria->name[0]}' ORDER BY Page.created DESC;";
         $q = $this->connection->query($sql);
-
+		if(!($this->connection->errorCode() === '00000')){
+			$error = $this->connection->errorInfo();
+			throw new Exception($error[2]);
+		}
+		
         $result = array();
         foreach($q as $row){ $result[] = new Page($row); }
         return $result;
@@ -28,7 +32,11 @@ class MySqlRepository implements IRepository {
         //Todo: use all the criteria fields
         $sql = "SELECT id, name, inactive FROM {$this->table_prefix}User WHERE name LIKE '{$criteria->name[0]}';";
         $q = $this->connection->query($sql);
-
+		if(!($this->connection->errorCode() === '00000')){
+			$error = $this->connection->errorInfo();
+			throw new Exception($error[2]);
+		}
+		
         $result = array();
         foreach($q as $row){ $result[] = new User($row); }
         return $result;
