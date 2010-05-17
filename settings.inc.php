@@ -1,8 +1,11 @@
 <?php
 class Settings{
 	public static function getRepository(){
-		$repository = new SqliteRepository('db.sqlite');
-		return $repository;
+		return new SqliteRepository('db.sqlite');
+	}
+	
+	public static function getBinaryDataRepository(){
+		return new FileBinaryDataRepository();
 	}
 }
 ?>

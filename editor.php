@@ -40,7 +40,7 @@ if(!empty($_REQUEST['Commit']) && array_keys_exist(array('name', 'mimetype', 'da
     $success = $repository->save($newData);
     if($success){
         if(!empty($_FILES['filedata']) && !empty($_FILES['filedata']['tmp_name'])){
-            $binaryRepository = new FileBinaryDataRepository();
+            $binaryRepository = Settings::getBinaryDataRepository();
             $success = $binaryRepository->save($_REQUEST['name'], $_FILES['filedata']['tmp_name']);
         }
     }
