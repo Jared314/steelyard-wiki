@@ -337,9 +337,12 @@ class HttpRequest implements IRequest{
     }
 
     private function generateBaseUrl($scriptUri){
+        $script = $_SERVER['SCRIPT_NAME'];
+        $i = strrpos($script, '/');
+        $basepath = substr($script, 0, $i + 1);
         $uri = parse_url($scriptUri);
         $info = pathinfo($uri['path']);
-        return $uri['scheme'].'://'.$uri['host'].$info['dirname'];
+        return $uri['scheme'].'://'.$uri['host'].$basepath;
     }
 
     private function parseUrl($baseUrl, $url){
