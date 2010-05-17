@@ -49,7 +49,8 @@ class MySqlRepository implements IRepository {
         $user_id = $this->getUserId($page->username);
         $inactive = $page->active ? 0 : 1;
         $is_binary = $page->isBinary ? 1 : 0;
-        $sql = "INSERT INTO {$this->table_prefix}Page (name, value, user_id, inactive, type, is_binary) VALUES ('{$page->name}','{$page->value}', {$user_id}, {$inactive}, '{$page->type}', {$is_binary});";
+        $value = addslashes($page->value);
+        $sql = "INSERT INTO {$this->table_prefix}Page (name, value, user_id, inactive, type, is_binary) VALUES ('{$page->name}','{$value}', {$user_id}, {$inactive}, '{$page->type}', {$is_binary});";
         return $this->connection->exec($sql) > 0;
     }
     private function saveUser(User $user){
@@ -69,7 +70,8 @@ class MySqlRepository implements IRepository {
     public function isValidUser($username, $password){
         if($password == null) $password = 'IS NULL';
         else $password = "= '".hash('sha256', $password)."'";
-
+		$username = addslashes($username);
+		
         $sql = "SELECT COUNT(id) FROM {$this->table_prefix}User WHERE name LIKE '{$username}' AND password {$password} AND inactive = 0;";
         $q = $this->connection->query($sql);
         return $q != false && $q->fetchColumn() > 0;
