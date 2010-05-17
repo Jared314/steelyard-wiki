@@ -1,5 +1,6 @@
 <?php
 require_once('steelyardwiki.inc.php');
+require_once('settings.inc.php');
 
 function array_keys_exist(array $keys, array $search){
     foreach($keys as $key) if(!array_key_exists($key, $search)) return false;
@@ -10,7 +11,7 @@ function array_keys_exist(array $keys, array $search){
 
 list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', base64_decode(substr($_SERVER['HTTP_AUTHORIZATION'], 6)));
 
-$repository = new SqliteRepository('db.sqlite');
+$repository = Settings::getRepository();
 
 //Validate User
 if (!array_keys_exist(array('PHP_AUTH_USER', 'PHP_AUTH_PW'), $_SERVER)

@@ -1,8 +1,9 @@
 <?php
 require_once('steelyardwiki.inc.php');
+require_once('settings.inc.php');
 
 $wiki = new SteelyardWiki(
-    new SqliteRepository('db.sqlite'),
+    Settings::getRepository(),
     new HttpRequest(),
     new FileBinaryDataRepository()
 );
