@@ -368,6 +368,7 @@ class FileBinaryDataRepository implements IBinaryDataRepository{
     }
 
     public function find($name){
+    	$name = $this->formatName($name);
         $name = $this->findFile($this->basePath, $name);
         if(!empty($name) && is_file($this->basePath.$name)){
             return $this->getBinaryContents($this->basePath.$name);
@@ -377,6 +378,7 @@ class FileBinaryDataRepository implements IBinaryDataRepository{
 
     public function save($name, $value){
         date_default_timezone_set('UTC');
+        $name = $this->formatName($name);
         $name = $this->basePath.$name.date('YmdHis');
         $result = false;
         if(is_string($value) && is_file($value)){
@@ -400,6 +402,10 @@ class FileBinaryDataRepository implements IBinaryDataRepository{
         
         return null;
     }
+
+	private function formatName($name){
+		return str_replace( '/', '_', $name);
+	}
 
     private function getBinaryContents($filename){
         $handle = fopen(realpath($filename), "rb");
