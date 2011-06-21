@@ -33,7 +33,7 @@ if(!empty($_REQUEST['Commit']) && array_keys_exist(array('name', 'mimetype', 'da
     $newData->value = $_REQUEST['data']; 
     $newData->active = (array_key_exists('active', $_REQUEST) && $_REQUEST['active'] == 'on');
     $newData->username = $_SERVER['PHP_AUTH_USER'];
-    $newData->isBinary = !empty($_FILES['filedata']);
+    $newData->isBinary = !empty($_FILES['filedata']) && !empty($_FILES['filedata']['tmp_name']);
 
 
 
