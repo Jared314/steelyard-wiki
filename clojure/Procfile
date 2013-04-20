@@ -1,1 +1,1 @@
-web: lein with-profile production trampoline run -m steelyard-wiki.server $PORT production
+web: lein with-profile production trampoline run -m steelyard-wiki.server $PORT production $DATABASE_URL

@@ -5,6 +5,8 @@
             [compojure.handler :as handler]
             [clojure.string :as str]))
 
+(def default-connection-string "")
+
 (defn parse-uri [uri]
       (str/replace uri #"^\/" ""))
 
@@ -18,5 +20,6 @@
 
 (defn -main [& options]
   (let [port (Integer. (or (first options) 5000))
-        mode (keyword (or (second options) :dev))]
+        mode (keyword (or (second options) :dev))
+        connection-string (nth options 2 default-connection-string)]
        (run-jetty app {:port port})))
