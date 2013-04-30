@@ -10,6 +10,7 @@
                  [org.clojure/java.jdbc "0.3.0-alpha1"]
                  [c3p0/c3p0 "0.9.1.2"]
                  [org.xerial/sqlite-jdbc "3.7.2"]
-                 [postgresql/postgresql "8.4-702.jdbc4"]]
+                 [postgresql/postgresql "8.4-702.jdbc4"]
+                 [org.clojure/tools.macro "0.1.1"]]
   :main steelyard-wiki.server
   :min-lein-version "2.0.0")
