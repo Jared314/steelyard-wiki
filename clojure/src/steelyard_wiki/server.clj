@@ -5,19 +5,28 @@
             [compojure.handler :as handler]
             [clojure.string :as str]
             [clojure.java.jdbc :as j]
-            [clojure.java.jdbc.sql :as s]))
+            [clojure.java.jdbc.sql :as s]
+            [clojure.pprint :as pp])
+  (:import [java.io ByteArrayInputStream]
+           [com.mchange.v2.c3p0 ComboPooledDataSource]))
 
 (def default-connection-string "Data Source=db.sqlite;Version=3;")
 
 (def dbconn
-      {:classname "org.sqlite.JDBC"
-       :subprotocol "sqlite"
-       :subname "db.sqlite"
-       :version "3"})
+     {:classname "org.sqlite.JDBC"
+      :subprotocol "sqlite"
+      :subname "db.sqlite"
+      :version "3"})
+
+(defn convert [{value :value type :type binary :is_binary}]
+      (let [body (if (= 1 binary) (ByteArrayInputStream. value) value)]
+           {:status 200
+            :headers {"Content-Type" type}
+            :body body}))
 
 (defn get-data [name]
-      (last (j/query dbconn (s/select * :page (s/where {:name name}))
-                     :row-fn :value)))
+      (let [result (j/query dbconn (s/select [:value :type :is_binary] :page (s/where {:name name :inactive 0}) (s/order-by {:id :desc})))]
+           (convert (first result))))
 
 (defn parse-uri [uri]
       (str/replace uri #"^\/" ""))
